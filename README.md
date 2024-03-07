@@ -1,4 +1,4 @@
-# BNN Fairness
+# FairQuantize
 
 Repo for MICCAI24 paper **FairQuantize: Achieving Fairness Through Weight Quantization for Dermatological Disease Diagnosis**.
 
