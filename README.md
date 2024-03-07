@@ -56,7 +56,7 @@ tar –xvf ISIC_2019_train.tar
 
 ### CelebA
 
-**Note**: so far, our paper have not used CelebA for any experiment yet.
+**Note**: so far, our paper has not used CelebA for any experiment yet.
 
 [offical website](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)
 
