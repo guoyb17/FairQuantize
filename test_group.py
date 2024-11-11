@@ -104,6 +104,8 @@ if __name__ == "__main__":
     # load pre-trained model
     filenames = os.listdir(args.model_file_directory)
     for model_file in filenames:
+        if model_file.endswith(".DS_Store"):
+            continue
         # define the backbone model
         model = model_backbone_v2(num_classes, args.backbone)
         if model is None:
@@ -111,7 +113,7 @@ if __name__ == "__main__":
         model.to(device)
 
         model_path = os.path.join(args.model_file_directory, model_file)
-        loaded_ckpt = torch.load(model_path, map_location=device)
+        loaded_ckpt = torch.load(model_path, map_location=device, weights_only=True)
         print("[NOTE] Testing", model_path)
         if args.pruned == 2:
             idx = 0

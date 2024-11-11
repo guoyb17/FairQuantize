@@ -174,7 +174,7 @@ if __name__ == "__main__":
     unquantized_weight_index = []
     # quantized_bias = []
     # quantized_bias_index = []
-    loaded_ckpt = torch.load(args.model_file, map_location=device)
+    loaded_ckpt = torch.load(args.model_file, map_location=device, weights_only=True)
     try:
         net.load_state_dict(loaded_ckpt['state_dict'])
     except:

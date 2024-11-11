@@ -112,7 +112,7 @@ if __name__ == "__main__":
     # backbone = models.vgg11(num_classes=num_classes)
     net = backbone.to(device)
 
-    loaded_ckpt = torch.load(args.model_file, map_location=device)
+    loaded_ckpt = torch.load(args.model_file, map_location=device, weights_only=True)
     print("[NOTE] Testing", args.model_file)
     if args.pruned == 2:
         idx = 0

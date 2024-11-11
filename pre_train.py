@@ -180,7 +180,7 @@ if __name__ == "__main__":
             backbone = models.vit_b_16(num_classes=num_classes, image_size=(224 // 2)) # TODO: change image_size
         else:
             raise NotImplementedError
-        loaded_ckpt = torch.load(args.model_file, map_location=device)
+        loaded_ckpt = torch.load(args.model_file, map_location=device, weights_only=True)
         try:
             backbone.load_state_dict(loaded_ckpt['state_dict'])
         except:
@@ -242,7 +242,7 @@ if __name__ == "__main__":
             raise NotImplementedError
     net = backbone.to(device)
     if args.model_file is not None and args.pre_trained >= 0:
-        loaded_ckpt = torch.load(args.model_file, map_location=device)
+        loaded_ckpt = torch.load(args.model_file, map_location=device, weights_only=True)
         try:
             net.load_state_dict(loaded_ckpt['state_dict'])
         except:

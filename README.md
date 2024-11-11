@@ -2,6 +2,14 @@
 
 Repo for MICCAI24 paper **FairQuantize: Achieving Fairness Through Weight Quantization for Dermatological Disease Diagnosis**.
 
+## Update
+
+### 11/11/2024
+
+Fixed the args.pre_load bug; added Apple mps support; removed some codes that are not used in this project.
+
+Note: args.pre_load is to load datasets in advance to accelerate the program on certain devices. It is far from developed (e.g., not supporting CelebA for now), so by default it is disabled, and please use it with caution if you really need it.
+
 ## Dependency
 
 The repo has been built and run on Python 3.9.18.
