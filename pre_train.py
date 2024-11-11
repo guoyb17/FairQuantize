@@ -63,6 +63,8 @@ parser.add_argument("--pre_trained", type=int, default=0,
                     help="whether to use pre-trained model; 0: False (default), >= 1: True (only 1 uses pre-trained model); -1: use full VGG11 pre-trained model")
 parser.add_argument('-m', '--model_file', type=str, default=None,
                     help="Partly trained model file path")
+parser.add_argument('--pre_load', type=int, default=0,
+                    help="If 1, pre-load datasets into GPU memory")
 
 def save_checkpoint(state, is_best_acc, is_best_loss, filename, to_delete=None):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -83,7 +85,11 @@ if __name__ == "__main__":
     else:
         ckpt_limit = args.ckpt_limit
     # check gpu
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
 
     if args.dataset == "fitzpatrick17k":
         if args.csv_file_name is None:

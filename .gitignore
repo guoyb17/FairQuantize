@@ -207,7 +207,6 @@ ISIC_2019_train/
 ISIC_2019/
 ISIC2019/
 
-deploy_sample/
 output/
 *.txt
 selected-models/

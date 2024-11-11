@@ -223,11 +223,6 @@ def fitzpatrick17k_holdout_score_v2(df, ctype):
 
     return train_and_score, val, test
 
-def fitzpatrick17k_holdout_test_deploy(csv_file_name, ctype):
-    test = read_fitzpatrick17k_dataset_metainfo(csv_file_name=csv_file_name)
-    test[ctype].value_counts().sort_index() # 10%
-    return test
-
 class Fitzpatrick_17k_Augmentations():
     def __init__(self, is_training, image_size=256, input_size=224):
         mdlParams = dict()
@@ -557,81 +552,6 @@ def fitzpatric17k_dataloader_score_v2(batch_size, workers, predefined_root_dir='
     test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs)
 
     return train_dataloader, val_dataloader, test_dataloader, train_df
-
-def fitzpatric17k_dataloader_score_v2s(batch_size, workers, predefined_root_dir='fitzpatrick17k/dataset_images', csv_file_name='fitzpatrick17k/fitzpatrick17k.csv', ctype='low'):
-    df = read_fitzpatrick17k_dataset_metainfo(csv_file_name=csv_file_name)
-    train_df, val_df, _ = fitzpatrick17k_holdout_score_v2(df, ctype)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    train_transform = Fitzpatrick_17k_Augmentations(is_training=True, image_size=image_size, input_size=crop_size).transforms
-    test_transform = Fitzpatrick_17k_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    train_dataset = Fitzpatrick17k(df=train_df, root_dir=predefined_root_dir, transform=train_transform)
-    val_dataset = Fitzpatrick17k(df=val_df, root_dir=predefined_root_dir, transform=test_transform)
-    use_cuda = torch.cuda.is_available()
-    kwargs = {'num_workers': workers, 'pin_memory': True} if use_cuda else {}
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, **kwargs)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, **kwargs)
-
-    return train_dataloader, val_dataloader, df
-
-def fitzpatric17k_dataloader_score_v3(batch_size, workers, predefined_root_dir='fitzpatrick17k/dataset_images', csv_file_name='fitzpatrick17k/fitzpatrick17k.csv', ctype='low', device="cpu", enable_train=True, enable_val=True, enable_test=True):
-    df = read_fitzpatrick17k_dataset_metainfo(csv_file_name=csv_file_name)
-    train_df, val_df, test_df = fitzpatrick17k_holdout_score_v2(df, ctype)
-    image_size = 256
-    crop_size = 224
-    train_transform = Fitzpatrick_17k_Augmentations(is_training=True, image_size=image_size, input_size=crop_size).transforms
-    test_transform = Fitzpatrick_17k_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    if enable_train:
-        train_dataset = Fitzpatrick17kV2(df=train_df, root_dir=predefined_root_dir, transform=train_transform)
-        train_dataset.to(device)
-    else:
-        train_dataset = Fitzpatrick17k(df=train_df, root_dir=predefined_root_dir, transform=train_transform)
-    if enable_val:
-        val_dataset = Fitzpatrick17kV2(df=val_df, root_dir=predefined_root_dir, transform=test_transform)
-        val_dataset.to(device)
-    else:
-        val_dataset = Fitzpatrick17k(df=val_df, root_dir=predefined_root_dir, transform=test_transform)
-    if enable_test:
-        test_dataset = Fitzpatrick17kV2(df=test_df, root_dir=predefined_root_dir, transform=test_transform)
-        test_dataset.to(device)
-    else:
-        test_dataset = Fitzpatrick17k(df=test_df, root_dir=predefined_root_dir, transform=test_transform)
-    kwargs = {'num_workers': workers, 'pin_memory': True} if device != "cpu" else {}
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, **kwargs if not enable_train else {})
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, **kwargs if not enable_val else {})
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, **kwargs if not enable_test else {})
-
-    return train_dataloader, val_dataloader, test_dataloader, train_df
-
-def fitzpatric17k_test_deploy(batch_size, predefined_root_dir='fitzpatrick17k/dataset_images', csv_file_name='fitzpatrick17k/selected.csv', ctype='mid'):
-    df = fitzpatrick17k_holdout_test_deploy(csv_file_name=csv_file_name, ctype=ctype)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    test_transform = Fitzpatrick_17k_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    test_dataset = Fitzpatrick17k(df=df, root_dir=predefined_root_dir, transform=test_transform)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    return test_dataloader
-
-def fitzpatric17k_pruning_examples(predefined_root_dir="pruning_examples/fitzpatrick17k", csv_file_name="pruning_examples/fitzpatrick17k.csv", ctype="low", minimum=False):
-    df = fitzpatrick17k_holdout_test_deploy(csv_file_name=csv_file_name, ctype=ctype)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    test_transform = Fitzpatrick_17k_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-
-    images = []
-    labels = []
-    for idx in tqdm(range(len(df))):
-        img_name = os.path.join(predefined_root_dir, df.loc[df.index[idx], 'hasher'] + '.jpg')
-        image = io.imread(img_name)
-        if(len(image.shape) < 3):
-            image = skimage.color.gray2rgb(image)
-        image = test_transform(image)
-        images.append(image)
-        labels.append(df.loc[df.index[idx], ctype])
-        if minimum:
-            break
-
-    return images, labels
 
 if __name__ == "__main__":
     # df = read_fitzpatrick17k_dataset_metainfo(csv_file_name='fitzpatrick17k/fitzpatrick17k.csv')

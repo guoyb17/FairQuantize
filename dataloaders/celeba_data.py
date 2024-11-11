@@ -381,52 +381,6 @@ def celeba_dataloader_score_v2(batch_size, workers, predefined_root_dir='img_ali
 
     return train_dataloader, val_dataloader, test_dataloader, train_df
 
-def celeba_dataloader_score_v2s(batch_size, workers, predefined_root_dir='img_align_celeba/img_align_celeba', csv_file_name='img_align_celeba/list_attr_celeba_modify.txt', fair_type="Young", ctype="Attractive"):
-    df = read_celeba_dataset_metainfo_raw(csv_file_name=csv_file_name)
-    train_df, val_df, _ = celeba_holdout_score_v2(df, ctype)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    train_transform = CelebA_Augmentations(is_training=True, image_size=image_size, input_size=crop_size).transforms
-    test_transform = CelebA_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    train_dataset = CelebA(df=train_df, fair_attr=fair_type, y_attr=ctype, root_dir=predefined_root_dir, transform=train_transform, s=True)
-    val_dataset = CelebA(df=val_df, fair_attr=fair_type, y_attr=ctype, root_dir=predefined_root_dir, transform=test_transform, s=True)
-    use_cuda = torch.cuda.is_available()
-    kwargs = {'num_workers': workers, 'pin_memory': True} if use_cuda else {}
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, **kwargs)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, **kwargs)
-
-    return train_dataloader, val_dataloader, df
-
-def celeba_test_deploy(batch_size, predefined_root_dir='img_align_celeba/img_align_celeba', csv_file_name='img_align_celeba/selected.csv', fair_type="Male", ctype="Bags_Under_Eyes"):
-    df = read_celeba_dataset_metainfo(csv_file_name=csv_file_name)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    test_transform = CelebA_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    test_dataset = CelebA(df=df, fair_attr=fair_type, y_attr=ctype, root_dir=predefined_root_dir, transform=test_transform)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    return test_dataloader
-
-def celeba_pruning_examples(predefined_root_dir="pruning_examples/celeba_Male_Big_Nose", csv_file_name="pruning_examples/celeba_Male_Big_Nose.csv", minimum=False, ctype="Big_Nose"):
-    df = read_celeba_dataset_metainfo(csv_file_name=csv_file_name)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    test_transform = CelebA_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-
-    images = []
-    labels = []
-    for idx in tqdm(range(len(df))):
-        img_name = os.path.join(predefined_root_dir, df.loc[df.index[idx], "Image_Id"])
-        image = io.imread(img_name)
-        if(len(image.shape) < 3):
-            image = skimage.color.gray2rgb(image)
-        image = test_transform(image)
-        images.append(image)
-        labels.append(df.loc[df.index[idx], ctype])
-        if minimum:
-            break
-
-    return images, labels
-
 if __name__ == "__main__":
     # df = read_celeba_dataset_metainfo_raw(csv_file_name='img_align_celeba/list_attr_celeba_modify.txt')
     # for index, row in df.iterrows():

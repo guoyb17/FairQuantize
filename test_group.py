@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch_pruning as tp
 
 from utils import model_backbone_v2
-from dataloaders import fitzpatric17k_dataloader_score_v2, fitzpatric17k_pruning_examples, \
-                        isic2019_dataloader_score_v2, isic2019_pruning_examples, \
-                        celeba_dataloader_score_v2, celeba_pruning_examples
+from dataloaders import fitzpatric17k_dataloader_score_v2, \
+                        isic2019_dataloader_score_v2, \
+                        celeba_dataloader_score_v2
 from fairness_metrics import compute_fairness_metrics
 
 
@@ -31,7 +31,7 @@ parser.add_argument('--image_dir', type=str, default=None,
 parser.add_argument('-o', '--output_file', type=str, required=True,
                     help="Output file path")
 parser.add_argument('--pruned', type=int, default=0,
-                    help="Whether it is a FairPrune model; default: 0 (no); 1: pre-set to zero; 2: masking layers; 3: torch_pruning models")
+                    help="Whether it is a FairPrune model; default: 0 (no); 1: pre-set to zero; 2: masking layers")
 parser.add_argument('--backbone', type=str, default="resnet18",
                     help="backbone model; now support: resnet18, vgg11, vgg11_bn")
 parser.add_argument('-b', '--batch_size', default=32, type=int,
@@ -95,19 +95,11 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if args.pruned == 3:
-        # TODO: finish these lines: celeba needs to be able to select attrs!
-        if args.dataset == "fitzpatrick17k":
-            example_inputs, example_labels = fitzpatric17k_pruning_examples(minimum=True)
-        elif args.dataset == "isic2019":
-            example_inputs, example_labels = isic2019_pruning_examples(minimum=True)
-        elif args.dataset == "celeba":
-            if args.fair_attr != "Male" or args.y_attr != "Big_Nose": # FIXME: hard code
-                raise NotImplementedError
-            example_inputs, example_labels = celeba_pruning_examples(minimum=True)
-        example_inputs = torch.stack(example_inputs, dim=0).to(device)
-        example_labels = torch.tensor(example_labels).to(device)
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
 
     # load pre-trained model
     filenames = os.listdir(args.model_file_directory)
@@ -121,13 +113,7 @@ if __name__ == "__main__":
         model_path = os.path.join(args.model_file_directory, model_file)
         loaded_ckpt = torch.load(model_path, map_location=device)
         print("[NOTE] Testing", model_path)
-        if args.pruned == 3:
-            DG = tp.DependencyGraph().build_dependency(model, example_inputs)
-            DG.load_pruning_history(loaded_ckpt['pruning'])
-            # for name in loaded_ckpt['model'].keys():
-            #     print(name, loaded_ckpt['model'][name].shape)
-            model.load_state_dict(loaded_ckpt['model'])
-        elif args.pruned == 2:
+        if args.pruned == 2:
             idx = 0
             for name, module in model.named_modules():
                 if isinstance(module, (nn.Linear, nn.Conv2d)):

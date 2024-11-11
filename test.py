@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch_pruning as tp
 
 from utils import model_backbone_v2 # , genScoreDataset
-from dataloaders import fitzpatric17k_dataloader_score_v2, fitzpatric17k_pruning_examples, \
-                        isic2019_dataloader_score_v2, isic2019_pruning_examples, \
-                        celeba_dataloader_score_v2, celeba_pruning_examples
+from dataloaders import fitzpatric17k_dataloader_score_v2, \
+                        isic2019_dataloader_score_v2, \
+                        celeba_dataloader_score_v2
 from fairness_metrics import compute_fairness_metrics
 
 parser = argparse.ArgumentParser(description='Fairness on Validation Set and Test Set (Single Model)')
@@ -43,7 +43,11 @@ parser.add_argument('-j', '--workers', default=8, type=int, metavar='N',
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     if args.dataset == "fitzpatrick17k":
         if args.csv_file_name is None:
             csv_file_name = "fitzpatrick17k/fitzpatrick17k.csv"
@@ -110,21 +114,7 @@ if __name__ == "__main__":
 
     loaded_ckpt = torch.load(args.model_file, map_location=device)
     print("[NOTE] Testing", args.model_file)
-    if args.pruned == 3:
-        if args.dataset == "fitzpatrick17k":
-            example_inputs, example_labels = fitzpatric17k_pruning_examples(minimum=True)
-        elif args.dataset == "isic2019":
-            example_inputs, example_labels = isic2019_pruning_examples(minimum=True)
-        elif args.dataset == "celeba":
-            if args.fair_attr != "Male" or args.y_attr != "Big_Nose": # FIXME: hard code
-                raise NotImplementedError
-            example_inputs, example_labels = celeba_pruning_examples(minimum=True)
-        example_inputs = torch.stack(example_inputs, dim=0).to(device)
-        example_labels = torch.tensor(example_labels).to(device)
-        DG = tp.DependencyGraph().build_dependency(net, example_inputs)
-        DG.load_pruning_history(loaded_ckpt['pruning'])
-        net.load_state_dict(loaded_ckpt['model'])
-    elif args.pruned == 2:
+    if args.pruned == 2:
         idx = 0
         for name, module in net.named_modules():
             if isinstance(module, (nn.Linear, nn.Conv2d)):

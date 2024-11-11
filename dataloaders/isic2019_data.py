@@ -246,22 +246,6 @@ def isic2019_dataloader_score_v2(batch_size, workers, predefined_root_dir='ISIC_
 
     return train_dataloader, val_dataloader, test_dataloader, train_df
 
-def isic2019_dataloader_score_v2s(batch_size, workers, predefined_root_dir='ISIC_2019_train/ISIC_2019_Training_Input', csv_file_name='ISIC_2019_train/ISIC_2019_Training_Metadata.csv'):
-    df = read_isic2019_dataset_metainfo_raw(csv_file_name=csv_file_name)
-    train_df, val_df, _ = isic2019_holdout_score_v2(df)
-    image_size = 256 // 2
-    crop_size = 224 // 2
-    train_transform = ISIC2019_Augmentations(is_training=True, image_size=image_size, input_size=crop_size).transforms
-    test_transform = ISIC2019_Augmentations(is_training=False, image_size=image_size, input_size=crop_size).transforms
-    train_dataset = ISIC2019(df=train_df, root_dir=predefined_root_dir, transform=train_transform, s=True)
-    val_dataset = ISIC2019(df=val_df, root_dir=predefined_root_dir, transform=test_transform, s=True)
-    use_cuda = torch.cuda.is_available()
-    kwargs = {'num_workers': workers, 'pin_memory': True} if use_cuda else {}
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, **kwargs)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, **kwargs)
-
-    return train_dataloader, val_dataloader, df
-
 def isic2019_dataloader_score_v3(batch_size, workers=8, predefined_root_dir='ISIC_2019_train/ISIC_2019_Training_Input', csv_file_name='ISIC_2019_train/ISIC_2019_Training_Metadata.csv', device="cpu", enable_train=True, enable_val=True, enable_test=True):
     df = read_isic2019_dataset_metainfo_raw(csv_file_name=csv_file_name)
     train_df, val_df, test_df = isic2019_holdout_score_v2(df)
